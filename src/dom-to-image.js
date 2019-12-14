@@ -174,6 +174,24 @@
         }
     }
 
+    function _copyStyle(source, target) {
+        if (source.cssText) {
+            target.cssText = source.cssText;
+        } else {
+            _copyProperties(source, target);
+        }
+    }
+
+    function _copyProperties(source, target) {
+        util.asArray(source).forEach(function (name) {
+            target.setProperty(
+                name,
+                source.getPropertyValue(name),
+                source.getPropertyPriority(name)
+            );
+        });
+    }
+
     function cloneNode(node, filter, root) {
         if (!root && filter && !filter(node)) return Promise.resolve();
 
@@ -230,25 +248,7 @@
             function cloneStyle() {
                 var _source = window.getComputedStyle(original);
 
-                copyStyle(_source, clone.style);
-
-                function copyStyle(source, target) {
-                    if (source.cssText) {
-                        target.cssText = source.cssText;
-                    } else {
-                        copyProperties(source, target);
-                    }
-
-                    function copyProperties(source, target) {
-                        util.asArray(source).forEach(function (name) {
-                            target.setProperty(
-                                name,
-                                source.getPropertyValue(name),
-                                source.getPropertyPriority(name)
-                            );
-                        });
-                    }
-                }
+                _copyStyle(_source, clone.style);
             }
 
             function clonePseudoElements() {
