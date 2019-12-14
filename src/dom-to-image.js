@@ -192,7 +192,7 @@
         });
     }
 
-    function _cloneStyle(original) {
+    function _cloneStyle(original, clone) {
         var _source = window.getComputedStyle(original);
 
         _copyStyle(_source, clone.style);
@@ -244,7 +244,7 @@
 
             return Promise.resolve()
                 .then(function () {
-                    _cloneStyle(original);
+                    _cloneStyle(original, clone);
                 })
                 .then(clonePseudoElements)
                 .then(copyUserInput)
