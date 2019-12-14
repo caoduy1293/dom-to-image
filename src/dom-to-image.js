@@ -192,6 +192,12 @@
         });
     }
 
+    function _cloneStyle(original) {
+        var _source = window.getComputedStyle(original);
+
+        _copyStyle(_source, clone.style);
+    }
+
     function cloneNode(node, filter, root) {
         if (!root && filter && !filter(node)) return Promise.resolve();
 
@@ -237,19 +243,15 @@
             if (!(clone instanceof Element)) return clone;
 
             return Promise.resolve()
-                .then(cloneStyle)
+                .then(function () {
+                    _cloneStyle(original);
+                })
                 .then(clonePseudoElements)
                 .then(copyUserInput)
                 .then(fixSvg)
                 .then(function () {
                     return clone;
                 });
-
-            function cloneStyle() {
-                var _source = window.getComputedStyle(original);
-
-                _copyStyle(_source, clone.style);
-            }
 
             function clonePseudoElements() {
                 [':before', ':after'].forEach(function (element) {
