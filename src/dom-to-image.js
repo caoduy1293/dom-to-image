@@ -228,11 +228,16 @@
                 });
 
             function cloneStyle() {
-                copyStyle(window.getComputedStyle(original), clone.style);
+                var _source = window.getComputedStyle(original);
+
+                copyStyle(_source, clone.style);
 
                 function copyStyle(source, target) {
-                    if (source.cssText) target.cssText = source.cssText;
-                    else copyProperties(source, target);
+                    if (source.cssText) {
+                        target.cssText = source.cssText;
+                    } else {
+                        copyProperties(source, target);
+                    }
 
                     function copyProperties(source, target) {
                         util.asArray(source).forEach(function (name) {
