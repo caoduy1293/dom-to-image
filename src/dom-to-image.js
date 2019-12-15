@@ -198,6 +198,67 @@
         _copyStyle(_source, clone.style);
     }
 
+    function clonePseudoElement(element, original, clone) {
+        var style = window.getComputedStyle(original, element);
+        var content = style.getPropertyValue('content');
+
+        if (content === '' || content === 'none') return;
+
+        var className = util.uid();
+        clone.className = clone.className + ' ' + className;
+        var styleElement = document.createElement('style');
+        styleElement.appendChild(formatPseudoElementStyle(className, element, style));
+        clone.appendChild(styleElement);
+
+        function formatPseudoElementStyle(className, element, style) {
+            var selector = '.' + className + ':' + element;
+            var cssText = style.cssText ? formatCssText(style) : formatCssProperties(style);
+            return document.createTextNode(selector + '{' + cssText + '}');
+
+            function formatCssText(style) {
+                var content = style.getPropertyValue('content');
+                return style.cssText + ' content: ' + content + ';';
+            }
+
+            function formatCssProperties(style) {
+
+                return util.asArray(style)
+                    .map(formatProperty)
+                    .join('; ') + ';';
+
+                function formatProperty(name) {
+                    return name + ': ' +
+                        style.getPropertyValue(name) +
+                        (style.getPropertyPriority(name) ? ' !important' : '');
+                }
+            }
+        }
+    }
+
+    function clonePseudoElements(original, clone) {
+        [':before', ':after'].forEach(function (element) {
+            clonePseudoElement(element, original, clone);
+        });
+    }
+
+    function copyUserInput(original, clone) {
+        if (original instanceof HTMLTextAreaElement) clone.innerHTML = original.value;
+        if (original instanceof HTMLInputElement) clone.setAttribute("value", original.value);
+    }
+
+    function fixSvg(clone) {
+        if (!(clone instanceof SVGElement)) return;
+        clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+        if (!(clone instanceof SVGRectElement)) return;
+        ['width', 'height'].forEach(function (attribute) {
+            var value = clone.getAttribute(attribute);
+            if (!value) return;
+
+            clone.style.setProperty(attribute, value);
+        });
+    }
+
     function cloneNode(node, filter, root) {
         if (!root && filter && !filter(node)) return Promise.resolve();
 
@@ -246,73 +307,18 @@
                 .then(function () {
                     _cloneStyle(original, clone);
                 })
-                .then(clonePseudoElements)
-                .then(copyUserInput)
-                .then(fixSvg)
+                .then(function () {
+                    clonePseudoElements(original, clone);
+                })
+                .then(function () {
+                    copyUserInput(original, clone);
+                })
+                .then(function () {
+                    fixSvg(clone);
+                })
                 .then(function () {
                     return clone;
                 });
-
-            function clonePseudoElements() {
-                [':before', ':after'].forEach(function (element) {
-                    clonePseudoElement(element);
-                });
-
-                function clonePseudoElement(element) {
-                    var style = window.getComputedStyle(original, element);
-                    var content = style.getPropertyValue('content');
-
-                    if (content === '' || content === 'none') return;
-
-                    var className = util.uid();
-                    clone.className = clone.className + ' ' + className;
-                    var styleElement = document.createElement('style');
-                    styleElement.appendChild(formatPseudoElementStyle(className, element, style));
-                    clone.appendChild(styleElement);
-
-                    function formatPseudoElementStyle(className, element, style) {
-                        var selector = '.' + className + ':' + element;
-                        var cssText = style.cssText ? formatCssText(style) : formatCssProperties(style);
-                        return document.createTextNode(selector + '{' + cssText + '}');
-
-                        function formatCssText(style) {
-                            var content = style.getPropertyValue('content');
-                            return style.cssText + ' content: ' + content + ';';
-                        }
-
-                        function formatCssProperties(style) {
-
-                            return util.asArray(style)
-                                .map(formatProperty)
-                                .join('; ') + ';';
-
-                            function formatProperty(name) {
-                                return name + ': ' +
-                                    style.getPropertyValue(name) +
-                                    (style.getPropertyPriority(name) ? ' !important' : '');
-                            }
-                        }
-                    }
-                }
-            }
-
-            function copyUserInput() {
-                if (original instanceof HTMLTextAreaElement) clone.innerHTML = original.value;
-                if (original instanceof HTMLInputElement) clone.setAttribute("value", original.value);
-            }
-
-            function fixSvg() {
-                if (!(clone instanceof SVGElement)) return;
-                clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-
-                if (!(clone instanceof SVGRectElement)) return;
-                ['width', 'height'].forEach(function (attribute) {
-                    var value = clone.getAttribute(attribute);
-                    if (!value) return;
-
-                    clone.style.setProperty(attribute, value);
-                });
-            }
         }
     }
 
